@@ -2,6 +2,8 @@
 
 qa <- function(df, option1, option2){
 
+  if(any(sapply(df, class) %in% "list")) stop("Function cannot handle type 'list' columns")
+
   #dimensions
   nrow <- nrow(df)
   ncol <- ncol(df)
