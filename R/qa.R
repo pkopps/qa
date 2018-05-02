@@ -1,5 +1,12 @@
-# qa
-
+#' QA a data frame per column for number of unique values, percent of NA values, etc.
+#'
+#' @param df data frame / tibble / etc.
+#' @param extended_summary include extra QA statistics in output
+#'
+#' @export
+#'
+#' @examples
+#' qa(mtcars)
 qa <- function(df, extended_summary = FALSE){
 
   if(any(sapply(df, class) %in% "list")) stop("Function cannot handle type 'list' columns")
@@ -14,8 +21,8 @@ qa <- function(df, extended_summary = FALSE){
 
   #summary stats
   summary_stats <- tibble(
-    names = paste0(names(df), ":"),
-    type = sapply(df, class),
+    col_names = paste0(names(df), ":"),
+    type = sapply(df, function(x) class(x)[1]),
     n_rows = nrow,
     n_zero = sapply(df, function(x) sum(x == 0, na.rm = T)),
     p_zero = paste0(round(100 * sapply(df, function(x) sum(x == 0, na.rm = T)) / nrow(df), 2), "%"),
@@ -24,10 +31,10 @@ qa <- function(df, extended_summary = FALSE){
     n_inf = sapply(df, function(x) sum(is.infinite(x))),
     p_inf = paste0(round(100 * sapply(df, function(x) sum(is.infinite( x ))) / nrow(df), 2), "%"),
     n_unique = sapply(df, function(x) sum(!is.na(unique( x )))),
-    min = sapply(df, function(x) ifelse(!(class(x) %in% c("character")), as.character(min(x, na.rm = TRUE)), NA)),
-    max = sapply(df, function(x) ifelse(!(class(x) %in% c("character")), as.character(max(x, na.rm = TRUE)), NA)),
+    min = sapply(df, function(x) ifelse(!(class(x)[1] %in% c("character", "factor")), as.character(min(x, na.rm = TRUE)), NA)),
+    max = sapply(df, function(x) ifelse(!(class(x)[1] %in% c("character", "factor")), as.character(max(x, na.rm = TRUE)), NA)),
     mean = suppressWarnings({
-      sapply(df, function(x) ifelse(!(class(x) %in% c("character")), as.character(round(mean(x, na.rm = TRUE), 3)), NA)
+      sapply(df, function(x) ifelse(!(class(x)[1] %in% c("character", "POSIXct")), as.character(round(mean(x, na.rm = TRUE), 3)), NA)
              )})
   )
 
@@ -43,34 +50,26 @@ qa <- function(df, extended_summary = FALSE){
   }
 
   #distribution
-  # cols <- summary_stats %>%
-  #   filter(n_unique < 15) %>%
-  #   filter(n_unique != 1) %>% # do not care about distribution for 1 unique value
-  #   select(names) %>% pull()
+  # dist <- map(df, table)
 
-  # cols[1]
-  # lapply(cols, table())
-
-  # table(units_month_close$marketplace) %>% as.data.frame() %>% mutate(Perc = round(Freq/sum(Freq),4) * 100)
-
+  # return
   if(extended_summary){
     out <- list(
       Dimensions = dims,
       Preview = head,
       Summary = summary_stats,
+      # `Column Value Distributions` = dist,
       `Extended Summary` = summary_cont_stats
-      # ,distributionTODO
     )
   }else(
     out <- list(
       Dimensions = dims,
       Preview = head,
       Summary = summary_stats
+      # `Column Value Distributions` = dist
       # `Extended Summary` = summary_cont_stats
-      # ,distributionTODO
     )
   )
-
   return(out)
 
 }
