@@ -1,13 +1,14 @@
 #' QA a data frame per column for number of unique values, percent of NA values, etc.
 #'
 #' @param df data frame / tibble / etc.
-#' @param extended_summary include extra QA statistics in output
+#' @param ext_summary include extra QA statistics in output
 #'
 #' @export
 #'
 #' @examples
 #' qa(mtcars)
-qa <- function(df, extended_summary = FALSE){
+#' iris %>% qa()
+qa <- function(df, ext_summary = FALSE, col_dist = FALSE){
 
   if(any(sapply(df, class) %in% "list")) stop("Function cannot handle type 'list' columns")
 
@@ -17,7 +18,7 @@ qa <- function(df, extended_summary = FALSE){
   dims <- glue("Rows: {nrow} Cols: {ncol}")
 
   #head
-  head <- df %>% head()
+  head <- df %>% head() %>% as_tibble()
 
   #summary stats
   summary_stats <- tibble(
@@ -38,7 +39,7 @@ qa <- function(df, extended_summary = FALSE){
              )})
   )
 
-  if(extended_summary){
+  if(ext_summary){
     summary_cont_stats <- tibble(
       names = paste0(names(df), ":"),
       n_neg_one = sapply(df, function(x) sum(x == -1, na.rm = T)),
@@ -50,10 +51,12 @@ qa <- function(df, extended_summary = FALSE){
   }
 
   #distribution
-  # dist <- map(df, table)
+  dist <- df %>% apply(., 2, table) %>%
+    map(as.data.frame) %>%
+    map(~arrange(., Freq %>% desc()))
 
   # return
-  if(extended_summary){
+  if (ext_summary == TRUE & col_dist == FALSE) {
     out <- list(
       Dimensions = dims,
       Preview = head,
@@ -61,7 +64,23 @@ qa <- function(df, extended_summary = FALSE){
       # `Column Value Distributions` = dist,
       `Extended Summary` = summary_cont_stats
     )
-  }else(
+  } else if (ext_summary == FALSE & col_dist == TRUE) {
+    out <- list(
+      Dimensions = dims,
+      Preview = head,
+      Summary = summary_stats,
+      `Column Value Distributions` = dist
+      # `Extended Summary` = summary_cont_stats
+    )
+  } else if (ext_summary == TRUE & col_dist == TRUE) {
+    out <- list(
+      Dimensions = dims,
+      Preview = head,
+      Summary = summary_stats,
+      `Column Value Distributions` = dist,
+      `Extended Summary` = summary_cont_stats
+    )
+  } else {
     out <- list(
       Dimensions = dims,
       Preview = head,
@@ -69,7 +88,7 @@ qa <- function(df, extended_summary = FALSE){
       # `Column Value Distributions` = dist
       # `Extended Summary` = summary_cont_stats
     )
-  )
+  }
   return(out)
 
 }
