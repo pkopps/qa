@@ -17,6 +17,9 @@ qa <- function(df, ext_summary = FALSE, col_dist = FALSE){
   ncol <- ncol(df)
   dims <- glue("Rows: {nrow} Cols: {ncol}")
 
+  alert <- white $ bgRed
+  if(nrow == 0) cat(alert(glue("ALERT: Data frame has {nrow} records!")))
+
   #head
   head <- df %>% head() %>% as_tibble()
 
